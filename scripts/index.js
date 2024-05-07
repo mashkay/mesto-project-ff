@@ -1,28 +1,33 @@
-const plasesList = document.querySelector('.places__list');
+const cardsContainer = document.querySelector('.places__list');
+const cardTemplate = document.querySelector('#card-template').content;
 
-function deleteCard(event) {
-  const card = event.target.closest('.card');
+function deleteCard(card) {
   card.remove();
 }
+function toggleCardLike(likeButton) {
+  likeButton.classList.toggle('card__like-button_is-active');
+}
 
-function createCard(name, link, deleteCard) {
-  const cardTemplate = document.querySelector('#card-template').content;
+function createCard(card, cardDeletionFunction, cardLikeToggleFunction) {
   const cardElement = cardTemplate.querySelector('.card').cloneNode(true);
   const cardImage = cardElement.querySelector('.card__image');
   const cardTitle = cardElement.querySelector('.card__title');
   const cardDeleteButton = cardElement.querySelector('.card__delete-button');
   const cardLikeButton = cardElement.querySelector('.card__like-button');
-  cardImage.src = link;
-  cardImage.alt = name;
-  cardTitle.textContent = name;
-  cardDeleteButton.addEventListener('click', deleteCard);
-  cardLikeButton.addEventListener('click', function (event) {
-    event.target.classList.toggle('card__like-button_is-active');
-  });
+  cardImage.src = card.link;
+  cardImage.alt = card.name;
+  cardTitle.textContent = card.name;
+  cardDeleteButton.addEventListener('click', () =>
+    cardDeletionFunction(cardElement)
+  );
+
+  cardLikeButton.addEventListener('click', () =>
+    cardLikeToggleFunction(cardLikeButton)
+  );
   return cardElement;
 }
 
 initialCards.forEach(function (card) {
-  const cardElement = createCard(card.name, card.link, deleteCard);
-  plasesList.append(cardElement);
+  const cardElement = createCard(card, deleteCard, toggleCardLike);
+  cardsContainer.append(cardElement);
 });
