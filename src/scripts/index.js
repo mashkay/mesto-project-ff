@@ -1,4 +1,4 @@
-import "../styles/pages/index.css";
+import "../pages/index.css";
 import  initialCards  from "./cards.js";
 
 const cardsContainer = document.querySelector('.places__list');
