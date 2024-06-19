@@ -1,36 +1,37 @@
-import "../pages/index.css";
-import  initialCards  from "./cards.js";
+import '../pages/index.css';
+import { createCard, deleteCard, toggleCardLike } from './card.js';
+import openModal from './modal.js';
+import initialCards from './initialCards.js';
+import setupEditProfile from './setupEditProfile.js';
+import setupCreateCardPopup from './createCardPopup.js';
 
-const cardsContainer = document.querySelector('.places__list');
-const cardTemplate = document.querySelector('#card-template').content;
-
-function deleteCard(card) {
-  card.remove();
-}
-function toggleCardLike(likeButton) {
-  likeButton.classList.toggle('card__like-button_is-active');
+function animatePopup(element) {
+    element.classList.add('popup_is-animated');
 }
 
-function createCard(cardData, cardDeletionFunction, cardLikeToggleFunction) {
-  const cardElement = cardTemplate.querySelector('.card').cloneNode(true);
-  const cardImage = cardElement.querySelector('.card__image');
-  const cardTitle = cardElement.querySelector('.card__title');
-  const cardDeleteButton = cardElement.querySelector('.card__delete-button');
-  const cardLikeButton = cardElement.querySelector('.card__like-button');
-  cardImage.src = cardData.link;
-  cardImage.alt = cardData.name;
-  cardTitle.textContent = cardData.name;
-  cardDeleteButton.addEventListener('click', () =>
-    cardDeletionFunction(cardElement)
-  );
-
-  cardLikeButton.addEventListener('click', () =>
-    cardLikeToggleFunction(cardLikeButton)
-  );
-  return cardElement;
+function createInitialCards() {
+    const cardsContainer = document.querySelector('.places__list');
+    const cardTemplate = document.querySelector('#card-template').content;
+    initialCards.forEach((cardData) => {
+        const card = createCard(
+            cardTemplate,
+            cardData,
+            deleteCard,
+            toggleCardLike,
+            openModal,
+            animatePopup
+        );
+        cardsContainer.append(card);
+    });
 }
 
-initialCards.forEach(function (card) {
-  const cardElement = createCard(card, deleteCard, toggleCardLike);
-  cardsContainer.append(cardElement);
-});
+createInitialCards();
+
+setupEditProfile(animatePopup, openModal);
+setupCreateCardPopup(
+    deleteCard,
+    toggleCardLike,
+    createCard,
+    animatePopup,
+    openModal
+);
