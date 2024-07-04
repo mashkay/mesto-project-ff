@@ -1,23 +1,51 @@
 import '../pages/index.css';
-import initialCards from './cards.js';
+// import initialCards from './cards.js';
 import {
     openModal,
     closeModal,
     animateModal,
     addCloseModalListeners,
 } from './modal.js';
-import { createCard, deleteCard, toggleCardLike } from './card.js';
+import {
+    createCard,
+    deleteCard,
+    toggleCardLikeBtn,
+    cardElementMethods,
+} from './card.js';
 import {
     editProfileFormSubmitHandler,
     setupEditProfileForm,
     editProfile,
+    editAvatar,
+    editAvatarFormSubmitHandler,
+
+    // parseUserData,
 } from './profile.js';
+import {
+    getCardsData,
+    getUserData,
+    updateAvatar,
+    updateUserData,
+    addCard,
+    api,
+} from './api.js';
+
+import { validation } from './validation.js';
+
+import { cardEventHandlers, cardUtilityMethods } from './cardHandlers.js';
+
+import { apiParser } from './apiParser.js';
+
+import { handleApiRequestError } from './errorHandlers.js';
+
+import { elements } from './elements.js';
 
 const cardsContainer = document.querySelector('.places__list');
 const cardTemplate = document.querySelector('#card-template').content;
 
 const profileName = document.querySelector('.profile__title');
 const profileDescription = document.querySelector('.profile__description');
+const profileAvatar = document.querySelector('.profile__image');
 
 const editProfileModal = document.querySelector('.popup_type_edit');
 const editProfileForm = document.forms['edit-profile'];
@@ -31,104 +59,172 @@ const cardImageModal = document.querySelector('.popup_type_image');
 
 const popups = document.querySelectorAll('.popup');
 
-function handleImageClick(modalProperties) {
-    const cardModal = modalProperties.modalElement;
-    const cardModalImage = cardModal.querySelector('.popup__image');
-    const cardModalCaption = cardModal.querySelector('.popup__caption');
-    const cardData = modalProperties.data;
+let currentUserId = '';
 
-    // открыть модальное окно с картинкой только после загрузки картинки
-    cardModalImage.addEventListener(
-        'load',
-        () => {
-            modalProperties.openModal(cardModal);
-        },
-        { once: true }
-    );
-    cardModalImage.src = cardData.link;
-    cardModalImage.alt = cardData.name;
-    cardModalCaption.textContent = cardData.name;
-}
+const cardConfiguration = {
+    template: elements.cardTemplate,
+    elementMethods: cardElementMethods,
+    eventListeners: cardEventHandlers,
+    utilityMethods: cardUtilityMethods,
+    apiMethods: {
+        toggleCardLike: api.toggleCardLike,
+        deleteCard: api.deleteCard,
+    },
+    modalProperties: {
+        cardImageModal: elements.cardImageModal,
+        cardDeleteModal: elements.cardDeleteModal,
+        cardDeleteForm: elements.cardDeleteForm,
+        openModal: openModal,
+        closeModal: closeModal,
+    },
+};
 
-function renderCard(cardObj, method = 'prepend') {
-    const cardElement = createCard(cardObj);
+function renderCard(cardObj, currentUserId, method = 'prepend') {
+    const cardElement = createCard(cardObj, currentUserId);
     cardsContainer[method](cardElement);
 }
 
-function handleNewCardSubmit(cardDetailsObject) {
-    const form = cardDetailsObject.form;
-    const cardObj = cardDetailsObject.cardObj;
-
+function handleNewCardSubmit({
+    form,
+    cardObject,
+    apiMethod,
+    onApiError,
+    onApiSuccess,
+    finalAction,
+}) {
     const nameInput = form.elements['place-name'];
     const linkInput = form.elements['link'];
 
-    cardObj.data = {
+    apiMethod({
         name: nameInput.value,
         link: linkInput.value,
-    };
+    })
+        .then((cardData) => {
+            const parsedCardData = apiParser.extractCardData(cardData);
+            const currentUserId = parsedCardData.owner.id;
+            onApiSuccess(
+                {
+                    configuration: cardObject.configuration,
+                    data: parsedCardData,
+                },
+                currentUserId
+            );
 
-    renderCard(cardObj);
-
-    form.reset();
+            form.reset();
+        })
+        .catch(onApiError)
+        .finally(() => finalAction(false, form));
 }
+
+
+Promise.all([api.getUserData(), api.getCardsData()])
+    .then(([userData, cardDataList]) => {
+        const parsedUserData = apiParser.extractUserData(userData);
+        currentUserId = parsedUserData.id;
+
+        editAvatar(parsedUserData.avatar, profileAvatar);
+
+        editProfile(parsedUserData, {
+            name: profileName,
+            description: profileDescription,
+        });
+
+        cardDataList.forEach((card) => {
+            const parsedCardData = apiParser.extractCardData(card);
+            renderCard(
+                {
+                    configuration: cardConfiguration,
+                    data: parsedCardData,
+                },
+                currentUserId,
+                'append'
+            );
+        });
+    })
+    .catch(handleApiRequestError);
 
 popups.forEach((popup) => {
     animateModal(popup);
     addCloseModalListeners(popup);
 });
 
-initialCards.forEach(function (card) {
-    renderCard(
-        {
-            data: card,
-            template: cardTemplate,
-            modal: cardImageModal,
-            handleImageClick: handleImageClick,
-            delete: deleteCard,
-            toggleLike: toggleCardLike,
-            openModal: openModal,
-        },
-        'append'
-    );
-});
-
-editProfileForm.addEventListener('submit', (event) => {
+elements.editProfileForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    editProfileFormSubmitHandler(
-        editProfileForm,
-        {
-            name: profileName,
-            description: profileDescription,
-        },
-        editProfile
-    );
+    renderLoading(true, elements.editProfileForm);
+    editProfileFormSubmitHandler({
+        form: elements.editProfileForm,
+        profile: { name: profileName, description: profileDescription },
+        apiMethod: updateUserData,
+        onApiError: handleApiRequestError,
+        onApiSuccess: editProfile,
+        finalAction: renderLoading,
+    });
     closeModal(editProfileModal);
 });
 
-addCardForm.addEventListener('submit', (event) => {
+elements.addCardForm.addEventListener('submit', (event) => {
     event.preventDefault();
+    renderLoading(true, elements.addCardForm);
     handleNewCardSubmit({
-        form: addCardForm,
-        cardObj: {
-            data: {},
-            template: cardTemplate,
-            delete: deleteCard,
-            toggleLike: toggleCardLike,
-            handleImageClick: handleImageClick,
-            modal: cardImageModal,
-            openModal: openModal,
+        form: elements.addCardForm,
+        cardObject: {
+            configuration: cardConfiguration,
         },
+        apiMethod: addCard,
+        onApiError: handleApiRequestError,
+        onApiSuccess: renderCard,
+        finalAction: renderLoading,
     });
     closeModal(addCardModal);
 });
 
-editProfileButton.addEventListener('click', () => {
-    setupEditProfileForm(editProfileForm, {
-        name: profileName,
-        description: profileDescription,
+elements.editProfileButton.addEventListener('click', () => {
+    setupEditProfileForm(elements.editProfileForm, {
+        name: elements.profileName,
+        description: elements.profileDescription,
     });
-    openModal(editProfileModal);
+    validation.clearValidation({ formElement: elements.editProfileForm, validationConfig: validation.validationConfig})
+    openModal(elements.editProfileModal);
 });
-addCardButton.addEventListener('click', () => {
-    openModal(addCardModal);
+
+elements.editProfileAvatarButton.addEventListener('click', () => {
+    openModal(elements.editProfileAvatarModal);
 });
+
+elements.editProfileAvatarForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    renderLoading(true, elements.editProfileAvatarForm);
+    editAvatarFormSubmitHandler({
+        form: elements.editProfileAvatarForm,
+        avatarElement: elements.profileAvatar,
+        apiMethod: updateAvatar,
+        onApiError: handleApiRequestError,
+        onApiSuccess: editAvatar,
+        finalAction: renderLoading,
+    });
+
+    closeModal(elements.editProfileAvatarModal);
+});
+
+elements.addCardButton.addEventListener('click', () => {
+    openModal(elements.addCardModal);
+});
+
+function renderLoading(isLoading, form) {
+    const button = form.querySelector('.popup__button');
+    if (isLoading) {
+        button.textContent = 'Сохранение...';
+    } else {
+        button.textContent = 'Сохранить';
+    }
+}
+
+
+// validation.showInputError({
+//   formElement: elements.editProfileForm,
+//   inputElement: elements.editProfileForm.elements.name,
+//   errorMessage: 'Ошибка',
+//   validationConfig: validation.validationConfig,
+
+// })
+validation.enableValidation(validation.validationConfig);
