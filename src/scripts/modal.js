@@ -1,6 +1,9 @@
 export function closeModal(modalElement) {
     modalElement.classList.remove('popup_is-opened');
     document.removeEventListener('keydown', closeOnEsc);
+    
+    const event = new Event("modal.closed");
+    modalElement.dispatchEvent(event);
 }
 
 function closeOnEsc(event) {
@@ -25,6 +28,9 @@ export function animateModal(modalElement) {
 export function openModal(modalElement) {
     modalElement.classList.add('popup_is-opened');
     document.addEventListener('keydown', closeOnEsc);
+    // trigger event: shown
+    const event = new Event("modal.shown");
+    modalElement.dispatchEvent(event);
 }
 
 export function addCloseModalListeners(modalElement) {

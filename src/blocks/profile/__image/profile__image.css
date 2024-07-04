@@ -7,6 +7,10 @@
   background-size: cover;
   background-position: center;
   margin: 0 29px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
 @media screen and (max-width: 740px) {
@@ -19,4 +23,29 @@
   .profile__image {
     margin-right: 0;
   }
+}
+
+
+.profile__image:hover .profile__edit-avatar-button {
+  opacity: 1;
+
+}
+
+
+
+.profile__image::after {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  -webkit-border-radius: 50%;
+  -moz-border-radius: 50%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.profile__image:hover::after {
+  opacity: 1;
 }
