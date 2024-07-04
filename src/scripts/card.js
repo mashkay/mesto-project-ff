@@ -20,9 +20,7 @@ export const cardElementMethods = {
 };
 
 export function createCard(cardObj, userId) {
-    const cardElement = cardObj.configuration.template
-        .querySelector('.card')
-        .cloneNode(true);
+    const cardElement = cardObj.template.querySelector('.card').cloneNode(true);
     const cardImage = cardElement.querySelector('.card__image');
     const cardTitle = cardElement.querySelector('.card__title');
     const cardDeleteButton = cardElement.querySelector('.card__delete-button');
@@ -33,56 +31,29 @@ export function createCard(cardObj, userId) {
     cardImage.alt = cardObj.data.name;
     cardTitle.textContent = cardObj.data.name;
     cardLikeCounter.textContent = cardObj.data.likes.length;
+    cardObj.cardElement = cardElement;
 
-    if (
-        !cardObj.configuration.utilityMethods.isCardOwner(cardObj.data, userId)
-    ) {
+    if (!cardObj.utilityMethods.isCardOwner(cardObj.data, userId)) {
         cardDeleteButton.classList.add('card__delete-button_is-hidden');
     } else {
         cardDeleteButton.classList.remove('card__delete-button_is-hidden');
         cardDeleteButton.addEventListener('click', () =>
-            cardObj.configuration.eventListeners.handleDeleteBtnClick({
-                apiMethod: cardObj.configuration.apiMethods.deleteCard,
-                elementMethod: cardObj.configuration.elementMethods.deleteCard,
-                cardId: cardObj.data.id,
-                cardElement: cardElement,
-                closeModal: cardObj.configuration.modalProperties.closeModal,
-                openModal: cardObj.configuration.modalProperties.openModal,
-                cardDeleteForm:
-                    cardObj.configuration.modalProperties.cardDeleteForm,
-                cardDeleteModal:
-                    cardObj.configuration.modalProperties.cardDeleteModal,
-            })
+            cardObj.eventListeners.handleDeleteBtnClick(cardObj)
         );
     }
-    if (
-        cardObj.configuration.utilityMethods.isCardLiked(cardObj.data, userId)
-    ) {
+    if (cardObj.utilityMethods.isCardLiked(cardObj.data, userId)) {
         cardLikeButton.classList.add('card__like-button_is-active');
     }
 
     cardLikeButton.addEventListener('click', () =>
-        cardObj.configuration.eventListeners.handleLikeBtnClick({
+        cardObj.eventListeners.handleLikeBtnClick(cardObj, {
             cardLikeButton,
-            userId,
-            likeCounter: cardLikeCounter,
-            cardData: cardObj.data,
-            apiMethod: cardObj.configuration.apiMethods.toggleCardLike,
-            updateLikesCounter:
-                cardObj.configuration.elementMethods.updateCardLikes,
-            isCardAlreadyLiked:
-                cardObj.configuration.elementMethods.isCardAlreadyLiked,
-            toggleCardLikeBtn:
-                cardObj.configuration.elementMethods.toggleCardLikeBtn,
+            cardLikeCounter,
         })
     );
 
     cardImage.addEventListener('click', () => {
-        cardObj.configuration.eventListeners.handleImageClick({
-            data: cardObj.data,
-            modalElement: cardObj.configuration.modalProperties.cardImageModal,
-            openModal: cardObj.configuration.modalProperties.openModal,
-        });
+        cardObj.eventListeners.handleImageClick(cardObj);
     });
 
     return cardElement;

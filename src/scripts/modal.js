@@ -1,6 +1,7 @@
 export function closeModal(modalElement) {
     modalElement.classList.remove('popup_is-opened');
     document.removeEventListener('keydown', closeOnEsc);
+    
     const event = new Event("modal.closed");
     modalElement.dispatchEvent(event);
 }

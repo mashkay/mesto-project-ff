@@ -1,63 +1,28 @@
 import '../pages/index.css';
-// import initialCards from './cards.js';
+
 import {
     openModal,
     closeModal,
     animateModal,
     addCloseModalListeners,
 } from './modal.js';
-import {
-    createCard,
-    deleteCard,
-    toggleCardLikeBtn,
-    cardElementMethods,
-} from './card.js';
+import { createCard, cardElementMethods } from './card.js';
 import {
     editProfileFormSubmitHandler,
     setupEditProfileForm,
     editProfile,
     editAvatar,
     editAvatarFormSubmitHandler,
-
-    // parseUserData,
 } from './profile.js';
-import {
-    getCardsData,
-    getUserData,
-    updateAvatar,
-    updateUserData,
-    addCard,
-    api,
-} from './api.js';
+import { api } from './api.js';
 
 import { validation } from './validation.js';
 
 import { cardEventHandlers, cardUtilityMethods } from './cardHandlers.js';
 
-import { apiParser } from './apiParser.js';
-
 import { handleApiRequestError } from './errorHandlers.js';
 
 import { elements } from './elements.js';
-
-const cardsContainer = document.querySelector('.places__list');
-const cardTemplate = document.querySelector('#card-template').content;
-
-const profileName = document.querySelector('.profile__title');
-const profileDescription = document.querySelector('.profile__description');
-const profileAvatar = document.querySelector('.profile__image');
-
-const editProfileModal = document.querySelector('.popup_type_edit');
-const editProfileForm = document.forms['edit-profile'];
-const editProfileButton = document.querySelector('.profile__edit-button');
-
-const addCardModal = document.querySelector('.popup_type_new-card');
-const addCardForm = document.forms['new-place'];
-const addCardButton = document.querySelector('.profile__add-button');
-
-const cardImageModal = document.querySelector('.popup_type_image');
-
-const popups = document.querySelectorAll('.popup');
 
 let currentUserId = '';
 
@@ -81,7 +46,16 @@ const cardConfiguration = {
 
 function renderCard(cardObj, currentUserId, method = 'prepend') {
     const cardElement = createCard(cardObj, currentUserId);
-    cardsContainer[method](cardElement);
+    elements.cardsContainer[method](cardElement);
+}
+
+function renderLoading(isLoading, form) {
+    const button = form.querySelector('.popup__button');
+    if (isLoading) {
+        button.textContent = 'Сохранение...';
+    } else {
+        button.textContent = 'Сохранить';
+    }
 }
 
 function handleNewCardSubmit({
@@ -100,12 +74,10 @@ function handleNewCardSubmit({
         link: linkInput.value,
     })
         .then((cardData) => {
-            const parsedCardData = apiParser.extractCardData(cardData);
-            const currentUserId = parsedCardData.owner.id;
             onApiSuccess(
                 {
-                    configuration: cardObject.configuration,
-                    data: parsedCardData,
+                    ...cardObject,
+                    data: cardData,
                 },
                 currentUserId
             );
@@ -116,26 +88,20 @@ function handleNewCardSubmit({
         .finally(() => finalAction(false, form));
 }
 
-
 Promise.all([api.getUserData(), api.getCardsData()])
     .then(([userData, cardDataList]) => {
-        const parsedUserData = apiParser.extractUserData(userData);
-        currentUserId = parsedUserData.id;
+        currentUserId = userData._id;
 
-        editAvatar(parsedUserData.avatar, profileAvatar);
+        editAvatar(userData.avatar, elements.profileAvatar);
 
-        editProfile(parsedUserData, {
-            name: profileName,
-            description: profileDescription,
+        editProfile(userData, {
+            name: elements.profileName,
+            description: elements.profileDescription,
         });
 
-        cardDataList.forEach((card) => {
-            const parsedCardData = apiParser.extractCardData(card);
+        cardDataList.forEach((cardData) => {
             renderCard(
-                {
-                    configuration: cardConfiguration,
-                    data: parsedCardData,
-                },
+                { ...cardConfiguration, data: cardData },
                 currentUserId,
                 'append'
             );
@@ -143,88 +109,77 @@ Promise.all([api.getUserData(), api.getCardsData()])
     })
     .catch(handleApiRequestError);
 
-popups.forEach((popup) => {
+elements.popups.forEach((popup) => {
     animateModal(popup);
     addCloseModalListeners(popup);
 });
 
-elements.editProfileForm.addEventListener('submit', (event) => {
+elements.profileEditForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    renderLoading(true, elements.editProfileForm);
+    renderLoading(true, elements.profileEditForm);
     editProfileFormSubmitHandler({
-        form: elements.editProfileForm,
-        profile: { name: profileName, description: profileDescription },
-        apiMethod: updateUserData,
+        form: elements.profileEditForm,
+        profile: {
+            name: elements.profileName,
+            description: elements.profileDescription,
+        },
+        apiMethod: api.updateUserData,
         onApiError: handleApiRequestError,
         onApiSuccess: editProfile,
         finalAction: renderLoading,
     });
-    closeModal(editProfileModal);
+    closeModal(elements.profileEditModal);
 });
 
-elements.addCardForm.addEventListener('submit', (event) => {
+elements.cardCreationForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    renderLoading(true, elements.addCardForm);
+    renderLoading(true, elements.cardCreationForm);
     handleNewCardSubmit({
-        form: elements.addCardForm,
+        form: elements.cardCreationForm,
         cardObject: {
-            configuration: cardConfiguration,
+            ...cardConfiguration,
         },
-        apiMethod: addCard,
+        apiMethod: api.addCard,
         onApiError: handleApiRequestError,
         onApiSuccess: renderCard,
         finalAction: renderLoading,
     });
-    closeModal(addCardModal);
+    closeModal(elements.cardCreationModal);
 });
 
-elements.editProfileButton.addEventListener('click', () => {
-    setupEditProfileForm(elements.editProfileForm, {
+elements.profileEditButton.addEventListener('click', () => {
+    setupEditProfileForm(elements.profileEditForm, {
         name: elements.profileName,
         description: elements.profileDescription,
     });
-    validation.clearValidation({ formElement: elements.editProfileForm, validationConfig: validation.validationConfig})
-    openModal(elements.editProfileModal);
+    validation.clearValidation({
+        formElement: elements.profileEditForm,
+        validationConfig: validation.validationConfig,
+    });
+    openModal(elements.profileEditModal);
 });
 
-elements.editProfileAvatarButton.addEventListener('click', () => {
-    openModal(elements.editProfileAvatarModal);
+elements.profileEditAvatarButton.addEventListener('click', () => {
+    openModal(elements.profileAvatarEditModal);
 });
 
-elements.editProfileAvatarForm.addEventListener('submit', (event) => {
+elements.profileAvatarEditForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    renderLoading(true, elements.editProfileAvatarForm);
+    renderLoading(true, elements.profileAvatarEditForm);
     editAvatarFormSubmitHandler({
-        form: elements.editProfileAvatarForm,
+        form: elements.profileAvatarEditForm,
         avatarElement: elements.profileAvatar,
-        apiMethod: updateAvatar,
+        apiMethod: api.updateAvatar,
         onApiError: handleApiRequestError,
         onApiSuccess: editAvatar,
         finalAction: renderLoading,
     });
 
-    closeModal(elements.editProfileAvatarModal);
+    closeModal(elements.profileAvatarEditModal);
 });
 
-elements.addCardButton.addEventListener('click', () => {
-    openModal(elements.addCardModal);
+elements.cardCreationButton.addEventListener('click', () => {
+    openModal(elements.cardCreationModal);
 });
 
-function renderLoading(isLoading, form) {
-    const button = form.querySelector('.popup__button');
-    if (isLoading) {
-        button.textContent = 'Сохранение...';
-    } else {
-        button.textContent = 'Сохранить';
-    }
-}
-
-
-// validation.showInputError({
-//   formElement: elements.editProfileForm,
-//   inputElement: elements.editProfileForm.elements.name,
-//   errorMessage: 'Ошибка',
-//   validationConfig: validation.validationConfig,
-
-// })
 validation.enableValidation(validation.validationConfig);

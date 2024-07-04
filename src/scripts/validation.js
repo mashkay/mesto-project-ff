@@ -30,7 +30,7 @@ const clearValidation = ({ formElement, validationConfig }) => {
         validationConfig.submitButtonSelector
     );
     inputElementList.forEach((inputElement) => {
-        inputElement.setCustomValidity('')
+        inputElement.setCustomValidity('');
         hideInputError({ formElement, inputElement, validationConfig });
     });
     setButtonState({ inputElementList, buttonElement, validationConfig });
@@ -88,7 +88,6 @@ const checkInputElementValidity = ({
         inputElement.setCustomValidity('');
     }
     if (!inputElement.validity.valid) {
-
         showInputError({
             formElement,
             inputElement,

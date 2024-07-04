@@ -1,17 +1,16 @@
 import { handleApiRequestError } from './errorHandlers';
-import { apiParser } from './apiParser';
 
-const handleImageClick = (modalProperties) => {
-    const cardModal = modalProperties.modalElement;
+const handleImageClick = (cardObj) => {
+    const cardModal = cardObj.modalProperties.cardImageModal;
     const cardModalImage = cardModal.querySelector('.popup__image');
     const cardModalCaption = cardModal.querySelector('.popup__caption');
-    const cardData = modalProperties.data;
+    const cardData = cardObj.data;
 
     // открыть модальное окно с картинкой только после загрузки картинки
     cardModalImage.addEventListener(
         'load',
         () => {
-            modalProperties.openModal(cardModal);
+            cardObj.modalProperties.openModal(cardModal);
         },
         { once: true }
     );
@@ -20,46 +19,65 @@ const handleImageClick = (modalProperties) => {
     cardModalCaption.textContent = cardData.name;
 };
 
-const handleDeleteBtnClick = (obj) => {
+const handleDeleteBtnClick = (cardObj) => {
+    // создаем обработчик для кнопки submit
     const handleDelete = (event) => {
-      event.preventDefault();
-      obj.apiMethod(obj.cardId)
-          .then(() => {
-              obj.elementMethod(obj.cardElement);
-              obj.closeModal(obj.cardDeleteModal);
-
-          })
-          .catch(handleApiRequestError);
+        event.preventDefault();
+        cardObj.apiMethods
+            .deleteCard(cardObj.data._id)
+            .then(() => {
+                cardObj.elementMethods.deleteCard(cardObj.cardElement);
+                cardObj.modalProperties.closeModal(
+                    cardObj.modalProperties.cardDeleteModal
+                );
+            })
+            .catch(handleApiRequestError);
     };
-    obj.cardDeleteModal.addEventListener('submit', handleDelete);
-    obj.cardDeleteModal.addEventListener('modal.closed', () => {
-        obj.cardDeleteModal.removeEventListener('submit', handleDelete);
-    }, {once: true});
-    obj.openModal(obj.cardDeleteModal);
+    // добавляем обработчик на кнопку submit
+    cardObj.modalProperties.cardDeleteModal.addEventListener(
+        'submit',
+        handleDelete
+    );
+    // добавляем обработчик на событие 'modal.closed' удаляющий handleDelete
+    cardObj.modalProperties.cardDeleteModal.addEventListener(
+        'modal.closed',
+        () => {
+            cardObj.modalProperties.cardDeleteModal.removeEventListener(
+                'submit',
+                handleDelete
+            );
+        },
+        { once: true }
+    );
+    cardObj.modalProperties.openModal(cardObj.modalProperties.cardDeleteModal);
 };
 
-const handleLikeBtnClick = (obj) => {
-    const cardWasLiked = obj.isCardAlreadyLiked(obj.cardLikeButton);
+const handleLikeBtnClick = (cardObj, { cardLikeButton, cardLikeCounter }) => {
+    const cardWasLiked =
+        cardObj.elementMethods.isCardAlreadyLiked(cardLikeButton);
     const likeMethod = cardWasLiked ? 'remove' : 'add';
-    obj.apiMethod(obj.cardData.id, cardWasLiked)
-        .then((rawCardData) => {
-            const updatedCardData = apiParser.extractCardData(rawCardData);
-            obj.updateLikesCounter(
-                obj.likeCounter,
-                updatedCardData.likes.length
+    cardObj.apiMethods
+        .toggleCardLike(cardObj.data._id, cardWasLiked)
+        .then((cardData) => {
+            cardObj.elementMethods.updateCardLikes(
+                cardLikeCounter,
+                cardData.likes.length
             );
-            obj.toggleCardLikeBtn(obj.cardLikeButton, likeMethod);
-            obj.cardData = updatedCardData;
+            cardObj.elementMethods.toggleCardLikeBtn(
+                cardLikeButton,
+                likeMethod
+            );
+            cardObj.data = cardData;
         })
         .catch(handleApiRequestError);
 };
 
 const isCardOwner = (card, userId) => {
-    return card.owner.id === userId;
+    return card.owner._id === userId;
 };
 
 const isCardLiked = (card, userId) => {
-    return card.likes.some((user) => user.id === userId);
+    return card.likes.some((user) => user._id === userId);
 };
 
 export const cardEventHandlers = {

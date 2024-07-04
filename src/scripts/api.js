@@ -19,19 +19,19 @@ function parseResponse(res) {
     return Promise.reject(`Ошибка: ${res.status}`);
 }
 
-export const getUserData = () => {
+const getUserData = () => {
     return fetch(new URL('users/me', apiConfig.getBaseURL()), {
         headers: apiConfig.headers,
     }).then(parseResponse);
 };
 
-export const getCardsData = () => {
+const getCardsData = () => {
     return fetch(new URL('cards', apiConfig.getBaseURL()), {
         headers: apiConfig.headers,
     }).then(parseResponse);
 };
 
-export const updateUserData = (data) => {
+const updateUserData = (data) => {
     return fetch(new URL('users/me', apiConfig.getBaseURL()), {
         method: 'PATCH',
         headers: apiConfig.headers,
@@ -39,7 +39,7 @@ export const updateUserData = (data) => {
     }).then(parseResponse);
 };
 
-export const updateAvatar = (data) => {
+const updateAvatar = (data) => {
     return fetch(new URL('users/me/avatar', apiConfig.getBaseURL()), {
         method: 'PATCH',
         headers: apiConfig.headers,
@@ -47,7 +47,7 @@ export const updateAvatar = (data) => {
     }).then(parseResponse);
 };
 
-export const addCard = (data) => {
+const addCard = (data) => {
     return fetch(new URL('cards', apiConfig.getBaseURL()), {
         method: 'POST',
         headers: apiConfig.headers,
@@ -55,14 +55,14 @@ export const addCard = (data) => {
     }).then(parseResponse);
 };
 
-export const deleteCard = (cardId) => {
+const deleteCard = (cardId) => {
     return fetch(new URL(`cards/${cardId}`, apiConfig.getBaseURL()), {
         method: 'DELETE',
         headers: apiConfig.headers,
     }).then(parseResponse);
 };
 
-export const toggleCardLike = (cardId, wasLiked) => {
+const toggleCardLike = (cardId, wasLiked) => {
     return fetch(new URL(`cards/likes/${cardId}`, apiConfig.getBaseURL()), {
         method: wasLiked ? 'DELETE' : 'PUT',
         headers: apiConfig.headers,
