@@ -65,6 +65,8 @@ function handleNewCardSubmit({
     onApiError,
     onApiSuccess,
     finalAction,
+    closeModal,
+    modal,
 }) {
     const nameInput = form.elements['place-name'];
     const linkInput = form.elements['link'];
@@ -81,8 +83,7 @@ function handleNewCardSubmit({
                 },
                 currentUserId
             );
-
-            form.reset();
+            closeModal(modal);
         })
         .catch(onApiError)
         .finally(() => finalAction(false, form));
@@ -127,8 +128,9 @@ elements.profileEditForm.addEventListener('submit', (event) => {
         onApiError: handleApiRequestError,
         onApiSuccess: editProfile,
         finalAction: renderLoading,
+        closeModal: closeModal,
+        modal: elements.profileEditModal,
     });
-    closeModal(elements.profileEditModal);
 });
 
 elements.cardCreationForm.addEventListener('submit', (event) => {
@@ -143,8 +145,9 @@ elements.cardCreationForm.addEventListener('submit', (event) => {
         onApiError: handleApiRequestError,
         onApiSuccess: renderCard,
         finalAction: renderLoading,
+        closeModal: closeModal,
+        modal: elements.cardCreationModal,
     });
-    closeModal(elements.cardCreationModal);
 });
 
 elements.profileEditButton.addEventListener('click', () => {
@@ -160,6 +163,11 @@ elements.profileEditButton.addEventListener('click', () => {
 });
 
 elements.profileEditAvatarButton.addEventListener('click', () => {
+    elements.profileAvatarEditForm.reset();
+    validation.clearValidation({
+        formElement: elements.profileAvatarEditForm,
+        validationConfig: validation.validationConfig,
+    });
     openModal(elements.profileAvatarEditModal);
 });
 
@@ -173,12 +181,17 @@ elements.profileAvatarEditForm.addEventListener('submit', (event) => {
         onApiError: handleApiRequestError,
         onApiSuccess: editAvatar,
         finalAction: renderLoading,
+        closeModal: closeModal,
+        modal: elements.profileAvatarEditModal,
     });
-
-    closeModal(elements.profileAvatarEditModal);
 });
 
 elements.cardCreationButton.addEventListener('click', () => {
+    elements.cardCreationForm.reset();
+    validation.clearValidation({
+        formElement: elements.cardCreationForm,
+        validationConfig: validation.validationConfig,
+    });
     openModal(elements.cardCreationModal);
 });
 
