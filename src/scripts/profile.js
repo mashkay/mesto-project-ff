@@ -12,12 +12,15 @@ export function editProfileFormSubmitHandler({
     onApiError,
     onApiSuccess,
     finalAction,
+    closeModal,
+    modal,
 }) {
     const nameInput = form.elements.name;
     const descriptionInput = form.elements.description;
     apiMethod({ name: nameInput.value, about: descriptionInput.value })
         .then((data) => {
             onApiSuccess(data, profile);
+            closeModal(modal);
         })
         .catch(onApiError)
         .finally(() => finalAction(false, form));
@@ -43,11 +46,14 @@ export function editAvatarFormSubmitHandler({
     onApiError,
     onApiSuccess,
     finalAction,
+    closeModal,
+    modal,
 }) {
     const avatarInput = form.elements['avatar-link'];
     apiMethod({ avatar: avatarInput.value })
         .then((data) => {
             onApiSuccess(data.avatar, avatarElement);
+            closeModal(modal);
         })
         .catch(onApiError)
         .finally(() => finalAction(false, form));
